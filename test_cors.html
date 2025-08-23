@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CORS Test</title>
+</head>
+<body>
+    <h1>Testing CORS and API Connection</h1>
+    <div id="result"></div>
+    
+    <script>
+    async function testAPI() {
+        const resultDiv = document.getElementById('result');
+        resultDiv.innerHTML = 'Testing API...';
+        
+        try {
+            console.log('Making API request...');
+            const response = await fetch('http://localhost:8880/menu_items', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            console.log('Response status:', response.status);
+            const data = await response.json();
+            console.log('Response data:', data);
+            
+            if (data && data.data && data.data.menu_items) {
+                resultDiv.innerHTML = `
+                    <h2>✅ API Working!</h2>
+                    <p><strong>Status:</strong> ${response.status}</p>
+                    <p><strong>Items found:</strong> ${data.data.menu_items.length}</p>
+                    <p><strong>First item:</strong> ${data.data.menu_items[0].name} (${data.data.menu_items[0].size})</p>
+                    <p><strong>Errors:</strong> ${data.errors.length}</p>
+                `;
+            } else {
+                resultDiv.innerHTML = `
+                    <h2>⚠️ Unexpected format</h2>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            }
+        } catch (error) {
+            console.error('API Error:', error);
+            resultDiv.innerHTML = `
+                <h2>❌ API Error</h2>
+                <p><strong>Error:</strong> ${error.message}</p>
+                <p><strong>Possible causes:</strong></p>
+                <ul>
+                    <li>Backend server not running on port 8880</li>
+                    <li>CORS not configured properly</li>
+                    <li>Network connectivity issue</li>
+                </ul>
+            `;
+        }
+    }
+    
+    testAPI();
+    </script>
+</body>
+</html>
