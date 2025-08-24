@@ -301,7 +301,7 @@ const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, onClose }) => {
                     <tr key={index} className="border-b border-gray-100">
                       <td className="py-2 px-4">{item.name}</td>
                       <td className="py-2 px-4">{item.size}</td>
-                      <td className="py-2 px-4">${item.price.toFixed(2)}</td>
+                      <td className="py-2 px-4">€{item.price.toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>

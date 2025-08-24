@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import burger from './assets/beef-burger.png';
 import './App.css';
 import ProductMenu from './components/ProductMenu';
@@ -13,6 +13,7 @@ import OrderHistory from './components/OrderHistory';
 import LoginModal from './components/LoginModal';
 import UserProfilePanel from './components/UserProfilePanel';
 import ProtectedRoute from './components/ProtectedRoute';
+import { networkAdapter } from './network/NetworkAdapter';
 import RoleBasedWrapper from './components/RoleBasedWrapper';
 import { useAuth } from './contexts/AuthContext';
 import { CartItem, calculateCartTotals, Discount, PaymentData } from './types/cart';
@@ -25,12 +26,81 @@ function App() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [discount, setDiscount] = useState<Discount | null>(null);
   const [showReceipt, setShowReceipt] = useState(false);
+  const [isReprint, setIsReprint] = useState(false);
   const [showDiscountModal, setShowDiscountModal] = useState(false);
   const [showOrderHistory, setShowOrderHistory] = useState(false);
   const [showUserProfile, setShowUserProfile] = useState(false);
   const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(true);
+
+  const api = networkAdapter;
+
+  // Load orders from database on app start
+  const loadOrders = useCallback(async () => {
+    try {
+      setOrdersLoading(true);
+      const response = await api.getOrders({ limit: 50, sort: '-timestamp' });
+      if (response && response.data && response.data.orders && response.errors && response.errors.length === 0) {
+        // Convert backend orders to frontend Order type
+        const ordersWithDates: Order[] = response.data.orders.map((order: any) => ({
+          id: order.id,
+          items: (order.items || []).map((item: any, index: number) => ({
+            id: `${order.id}-${index}-${item.product_id || 'unknown'}`,
+            product: {
+              id: item.product_id || 'unknown',
+              name: item.product_name || 'Unknown Item',
+              size: item.size || 'Regular',
+              price: item.price || 0,
+              isActive: true
+            },
+            quantity: item.quantity || 1,
+            addedAt: new Date(order.created_at || new Date()),
+            notes: item.notes || ''
+          })),
+          discount: order.discount_amount > 0 ? {
+            id: `discount-${order.id}`,
+            type: 'fixed' as const,
+            value: order.discount_amount,
+            reason: order.discount_reason || 'Applied discount',
+            appliedAt: new Date(order.created_at || new Date())
+          } : null,
+          subtotal: order.subtotal || 0,
+          discountAmount: order.discount_amount || 0,
+          tax: order.tax_amount || order.tax || 0,
+          total: order.total_amount || order.total || 0,
+          paymentMethod: order.payment_method as 'cash' | 'card',
+          cashReceived: order.amount_paid || order.cash_received || 0,
+          change: order.change_given || order.change_amount || 0,
+          timestamp: new Date(order.created_at || order.order_time),
+          staffId: order.staff_id || order.user_id || 'system',
+          status: order.status === 'completed' ? 'completed' : order.status === 'refunded' ? 'refunded' : 'voided',
+          reprintCount: order.reprint_count || 0,
+          lastReprint: order.last_reprint ? new Date(order.last_reprint) : undefined
+        }));
+        setOrders(ordersWithDates);
+      }
+    } catch (error) {
+      console.error('Failed to load orders:', error);
+    } finally {
+      setOrdersLoading(false);
+    }
+  }, [api]);
+
+  // Refresh orders function that can be called manually
+  const refreshOrders = useCallback(() => {
+    if (isAuthenticated) {
+      loadOrders();
+    }
+  }, [isAuthenticated, loadOrders]);
+
+  // Load orders when app starts and user is authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadOrders();
+    }
+  }, [isAuthenticated, loadOrders]);
 
   const addToCart = useCallback((product: MenuItem) => {
     setCartItems(prevItems => {
@@ -76,39 +146,90 @@ function App() {
     setDiscount(null);
   }, []);
 
-  const handleOrderComplete = useCallback((paymentData: PaymentData) => {
+  const handleOrderComplete = useCallback(async (paymentData: PaymentData) => {
     const orderTotals = calculateCartTotals(cartItems, discount);
-    const newOrder: Order = {
-      id: `order-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      items: [...cartItems],
-      discount: discount ? { ...discount } : null,
+    const orderData = {
+      items: cartItems.map(item => ({
+        productId: item.product.id,
+        productName: item.product.name,
+        size: item.product.size,
+        price: item.product.price,
+        quantity: item.quantity,
+        notes: item.notes || ''
+      })),
       subtotal: orderTotals.subtotal,
+      taxAmount: orderTotals.tax,
       discountAmount: orderTotals.discountAmount,
-      tax: orderTotals.tax,
+      discountReason: discount?.reason || '',
       total: paymentData.total,
       paymentMethod: paymentData.cash > 0 ? 'cash' : 'card',
-      cashReceived: paymentData.cash,
-      change: paymentData.change,
-      timestamp: new Date(),
-      staffId: 'CURRENT_USER', // This would come from authentication
-      status: 'completed',
-      reprintCount: 0
+      amountPaid: paymentData.cash > 0 ? paymentData.cash : paymentData.total,
+      changeGiven: paymentData.change,
+      createdBy: user?.id || 'system',
+      customerName: '',
+      orderNotes: ''
     };
 
-    setOrders(prevOrders => [newOrder, ...prevOrders]);
-    setPaymentData(paymentData);
-    setShowReceipt(true);
-  }, [cartItems, discount]);
+    try {
+      // Save to database
+      const response = await api.createOrder(orderData);
+      if (response && response.data && response.data.order && response.errors && response.errors.length === 0) {
+        const orderResponse = response.data.order;
+        // Convert the response back to our Order type and add to local state
+        const newOrder: Order = {
+          id: orderResponse.id,
+          items: cartItems, // Keep the original cart items structure for UI
+          discount: discount,
+          subtotal: orderResponse.subtotal,
+          discountAmount: orderResponse.discountAmount || 0,
+          tax: orderResponse.taxAmount,
+          total: orderResponse.total,
+          paymentMethod: orderResponse.paymentMethod as 'cash' | 'card',
+          cashReceived: orderResponse.amountPaid,
+          change: orderResponse.changeGiven,
+          timestamp: new Date(orderResponse.createdAt || new Date()),
+          staffId: orderResponse.createdBy || 'system',
+          status: orderResponse.status === 'PAID' ? 'completed' : 'pending',
+          reprintCount: 0
+        };
+        
+        setOrders(prevOrders => [newOrder, ...prevOrders]);
+        setPaymentData(paymentData);
+        setIsReprint(false);
+        setShowReceipt(true);
+      } else {
+        console.error('Failed to save order:', response?.errors || 'Unknown error');
+        // Still show receipt even if save failed
+        setPaymentData(paymentData);
+        setIsReprint(false);
+        setShowReceipt(true);
+      }
+    } catch (error) {
+      console.error('Error saving order:', error);
+      // Still show receipt even if save failed
+      setPaymentData(paymentData);
+      setIsReprint(false);
+      setShowReceipt(true);
+    }
+  }, [cartItems, discount, user, api]);
 
-  const handleReprintReceipt = useCallback((order: Order) => {
-    // Update reprint count
-    setOrders(prevOrders => 
-      prevOrders.map(o => 
-        o.id === order.id 
-          ? { ...o, reprintCount: o.reprintCount + 1, lastReprint: new Date() }
-          : o
-      )
-    );
+  const handleReprintReceipt = useCallback(async (order: Order) => {
+    try {
+      // Call API to reprint (this will update reprint count in database)
+      await api.reprintReceipt(order.id);
+      
+      // Update local state
+      setOrders(prevOrders => 
+        prevOrders.map(o => 
+          o.id === order.id 
+            ? { ...o, reprintCount: o.reprintCount + 1, lastReprint: new Date() }
+            : o
+        )
+      );
+    } catch (error) {
+      console.error('Failed to update reprint count:', error);
+      // Continue with reprint even if database update fails
+    }
 
     // Show receipt with order data
     setPaymentData({
@@ -118,9 +239,10 @@ function App() {
     });
     setCartItems([...order.items]);
     setDiscount(order.discount ? { ...order.discount } : null);
+    setIsReprint(true);
     setShowReceipt(true);
     setShowOrderHistory(false);
-  }, []);
+  }, [api]);
 
   const totals = calculateCartTotals(cartItems, discount);
 
@@ -252,19 +374,20 @@ function App() {
             discount={discount}
             paymentMethod={paymentData.cash > 0 ? 'cash' : 'card'}
             orderId={orders.length > 0 ? orders[0].id : undefined}
+            isReprint={isReprint}
             onProceed={() => {
-              const receiptContent: any = document.getElementById('receipt-content');
-              const printArea: any = document.getElementById('print-area');
-              printArea.innerHTML = receiptContent.innerHTML;
-              window.print();
-              printArea.innerHTML = '';
+              // Just close the receipt modal - printing is handled by ReceiptPreview
               setShowReceipt(false);
               setPaymentData(null);
-              clearCart();
+              if (!isReprint) {
+                clearCart();
+              }
+              setIsReprint(false);
             }}
             onClose={() => {
               setShowReceipt(false);
               setPaymentData(null);
+              setIsReprint(false);
             }}
             />
         }
@@ -287,6 +410,8 @@ function App() {
               orders={orders}
               onReprintReceipt={handleReprintReceipt}
               onClose={() => setShowOrderHistory(false)}
+              loading={ordersLoading}
+              onRefresh={refreshOrders}
             />
           )}
         </ProtectedRoute>
@@ -308,7 +433,6 @@ function App() {
           onClose={() => setShowUserProfile(false)}
         />
       </div>
-      <div id="print-area" className="print-area"></div>
     </>
   );
 }

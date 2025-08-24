@@ -47,6 +47,7 @@ export type Permission =
   | 'reports.view'
   | 'reports.export'
   | 'reports.financial'
+  | 'reports.send_email'
   
   // User Management
   | 'users.view'
@@ -107,7 +108,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'inventory.view', 'inventory.edit', 'inventory.adjust_stock', 'inventory.export', 'inventory.view_costs',
     'sales.process', 'sales.refund', 'sales.view_history', 'sales.apply_discount', 'sales.override_price',
     'receipts.print', 'receipts.reprint', 'receipts.email',
-    'reports.view', 'reports.export', 'reports.financial',
+    'reports.view', 'reports.export', 'reports.financial', 'reports.send_email',
     'users.view', 'users.create', 'users.edit', 'users.delete', 'users.reset_password',
     'system.settings', 'system.backup', 'system.logs', 'system.maintenance'
   ],
@@ -118,7 +119,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'inventory.view', 'inventory.edit', 'inventory.adjust_stock', 'inventory.export', 'inventory.view_costs',
     'sales.process', 'sales.refund', 'sales.view_history', 'sales.apply_discount', 'sales.override_price',
     'receipts.print', 'receipts.reprint', 'receipts.email',
-    'reports.view', 'reports.export', 'reports.financial',
+    'reports.view', 'reports.export', 'reports.financial', 'reports.send_email',
     'users.view', 'users.edit',
     'system.settings'
   ],

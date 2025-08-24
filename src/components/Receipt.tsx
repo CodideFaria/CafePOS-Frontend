@@ -10,6 +10,7 @@ interface ReceiptProps {
   discount?: Discount | null;
   paymentMethod?: 'cash' | 'card';
   orderId?: string;
+  isReprint?: boolean;
   onProceed: () => void;
   onClose: () => void;
 }
@@ -22,6 +23,7 @@ const Receipt: React.FC<ReceiptProps> = ({
   discount,
   paymentMethod = 'cash',
   orderId,
+  isReprint = false,
   onProceed, 
   onClose 
 }) => {
@@ -48,13 +50,13 @@ const Receipt: React.FC<ReceiptProps> = ({
           <div className="p-6">
             <div className="bg-gray-50 rounded-lg p-4 mb-4">
               <div className="text-center space-y-2">
-                <div className="text-2xl font-bold text-gray-800">${total.toFixed(2)}</div>
+                <div className="text-2xl font-bold text-gray-800">€{total.toFixed(2)}</div>
                 <div className="text-sm text-gray-600">
                   {items.reduce((acc, item) => acc + item.quantity, 0)} items • {paymentMethod.toUpperCase()}
                 </div>
                 {paymentMethod === 'cash' && (
                   <div className="text-sm">
-                    <span className="text-gray-600">Cash: ${cash.toFixed(2)} • Change: ${change.toFixed(2)}</span>
+                    <span className="text-gray-600">Cash: €{cash.toFixed(2)} • Change: €{change.toFixed(2)}</span>
                   </div>
                 )}
               </div>
@@ -70,7 +72,9 @@ const Receipt: React.FC<ReceiptProps> = ({
               </button>
               
               <button 
-                onClick={onProceed}
+                onClick={() => {
+                  setShowPreview(true);
+                }}
                 className="w-full bg-orange-500 hover:bg-orange-600 text-white text-lg px-4 py-3 rounded-2xl transition-colors focus:outline-none focus:ring-4 focus:ring-orange-300"
               >
                 🖨️ Quick Print
@@ -85,72 +89,6 @@ const Receipt: React.FC<ReceiptProps> = ({
             </div>
           </div>
 
-          {/* Hidden receipt content for quick print */}
-          <div id="receipt-content" className="hidden">
-            <div className="text-center font-mono">
-              <h2 className="text-lg font-bold">☕ CAFE POS</h2>
-              <p className="text-xs">123 Coffee Street<br/>Brewtown, BT 12345</p>
-              <hr className="my-2"/>
-              <div className="text-left text-xs space-y-1">
-                <div>Receipt: {receiptNo}</div>
-                <div>Date: {date.toLocaleString()}</div>
-                <div>Payment: {paymentMethod.toUpperCase()}</div>
-              </div>
-              <hr className="my-2"/>
-              {items.map((item, index) => (
-                <div key={index} className="text-left text-xs">
-                  <div className="flex justify-between">
-                    <span>{item.product.name}</span>
-                    <span>${(item.product.price * item.quantity).toFixed(2)}</span>
-                  </div>
-                  <div className="text-gray-600">
-                    {item.quantity} x ${item.product.price.toFixed(2)}
-                  </div>
-                  {item.notes && (
-                    <div className="text-gray-600 italic">Note: {item.notes}</div>
-                  )}
-                </div>
-              ))}
-              <hr className="my-2"/>
-              <div className="text-left text-xs space-y-1">
-                <div className="flex justify-between">
-                  <span>Subtotal:</span>
-                  <span>${totals.subtotal.toFixed(2)}</span>
-                </div>
-                {discount && (
-                  <div className="flex justify-between">
-                    <span>Discount:</span>
-                    <span>-${totals.discountAmount.toFixed(2)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between">
-                  <span>Tax:</span>
-                  <span>${totals.tax.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between font-bold">
-                  <span>TOTAL:</span>
-                  <span>${total.toFixed(2)}</span>
-                </div>
-                {paymentMethod === 'cash' && (
-                  <>
-                    <div className="flex justify-between">
-                      <span>Cash:</span>
-                      <span>${cash.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Change:</span>
-                      <span>${change.toFixed(2)}</span>
-                    </div>
-                  </>
-                )}
-              </div>
-              <hr className="my-2"/>
-              <div className="text-center text-xs">
-                <p>Thank you for your visit!</p>
-                <p>Please come again ☕</p>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -173,6 +111,7 @@ const Receipt: React.FC<ReceiptProps> = ({
         paymentMethod={paymentMethod}
         orderTimestamp={date}
         orderId={receiptNo}
+        isReprint={isReprint}
       />
     </>
   );

@@ -89,17 +89,17 @@ const Cart: React.FC<CartProps> = ({
           <div className="space-y-1 text-sm">
             <div className="flex justify-between">
               <span>Subtotal ({totals.itemCount} items):</span>
-              <span>${totals.subtotal.toFixed(2)}</span>
+              <span>€{totals.subtotal.toFixed(2)}</span>
             </div>
             
             {/* Discount Section */}
             {discount ? (
               <div className="flex justify-between text-green-600">
                 <span>
-                  Discount ({discount.type === 'percentage' ? `${discount.value}%` : `$${discount.value}`}):
+                  Discount ({discount.type === 'percentage' ? `${discount.value}%` : `€${discount.value}`}):
                   <span className="text-xs text-gray-500 ml-1">({discount.reason})</span>
                 </span>
-                <span>-${totals.discountAmount.toFixed(2)}</span>
+                <span>-€{totals.discountAmount.toFixed(2)}</span>
               </div>
             ) : onDiscountClick && (
               <div className="flex justify-between">
@@ -115,11 +115,11 @@ const Cart: React.FC<CartProps> = ({
             
             <div className="flex justify-between">
               <span>Tax (8%):</span>
-              <span>${totals.tax.toFixed(2)}</span>
+              <span>€{totals.tax.toFixed(2)}</span>
             </div>
             <div className="flex justify-between font-semibold text-base border-t pt-1">
               <span>Total:</span>
-              <span>${totals.total.toFixed(2)}</span>
+              <span>€{totals.total.toFixed(2)}</span>
             </div>
             
             {/* Discount Actions */}

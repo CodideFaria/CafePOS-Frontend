@@ -274,7 +274,7 @@ const InventoryManagement: React.FC<InventoryManagementProps> = ({ onClose }) =>
                     </div>
                     <div className="ml-4">
                       <p className="text-sm font-medium text-green-600">Total Value</p>
-                      <p className="text-2xl font-bold text-green-900">${stats.totalValue.toFixed(2)}</p>
+                      <p className="text-2xl font-bold text-green-900">€{stats.totalValue.toFixed(2)}</p>
                     </div>
                   </div>
                 </div>

@@ -39,7 +39,7 @@ const CartItem: React.FC<CartItemProps> = ({
         <div className="flex-grow">
           <h5 className="text-sm font-medium">{cartItem.product.name}</h5>
           <p className="text-xs text-gray-500">
-            {cartItem.product.size} • ${cartItem.product.price.toFixed(2)} each
+            {cartItem.product.size} • €{cartItem.product.price.toFixed(2)} each
           </p>
           {cartItem.notes && (
             <p className="text-xs text-blue-600 mt-1 italic">Note: {cartItem.notes}</p>
@@ -80,7 +80,7 @@ const CartItem: React.FC<CartItemProps> = ({
 
         {/* Item Total */}
         <div className="ml-4 text-right">
-          <p className="text-sm font-semibold">${itemTotal.toFixed(2)}</p>
+          <p className="text-sm font-semibold">€{itemTotal.toFixed(2)}</p>
         </div>
       </div>
 

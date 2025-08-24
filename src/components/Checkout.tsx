@@ -66,20 +66,20 @@ const Checkout: React.FC<CheckoutProps> = ({
         <div className="space-y-1 text-sm">
           <div className="flex justify-between">
             <span>Subtotal ({totals.itemCount} items):</span>
-            <span>${totals.subtotal.toFixed(2)}</span>
+            <span>€{totals.subtotal.toFixed(2)}</span>
           </div>
           
           {/* Discount Display */}
           {discount ? (
             <div className="flex justify-between text-green-600">
               <span>
-                Discount ({discount.type === 'percentage' ? `${discount.value}%` : `$${discount.value}`}):
+                Discount ({discount.type === 'percentage' ? `${discount.value}%` : `€${discount.value}`}):
                 <div className="text-xs text-gray-500">
                   {discount.reason} • Staff: {discount.staffId}
                 </div>
               </span>
               <div className="text-right">
-                <div>-${totals.discountAmount.toFixed(2)}</div>
+                <div>-€{totals.discountAmount.toFixed(2)}</div>
                 {onDiscountClick && (
                   <button
                     onClick={onDiscountClick}
@@ -104,11 +104,11 @@ const Checkout: React.FC<CheckoutProps> = ({
           
           <div className="flex justify-between">
             <span>Tax (8%):</span>
-            <span>${totals.tax.toFixed(2)}</span>
+            <span>€{totals.tax.toFixed(2)}</span>
           </div>
           <div className="flex justify-between font-bold text-lg border-t pt-2 text-gray-800">
             <span>TOTAL:</span>
-            <span>${totals.total.toFixed(2)}</span>
+            <span>€{totals.total.toFixed(2)}</span>
           </div>
         </div>
       </div>
@@ -143,7 +143,7 @@ const Checkout: React.FC<CheckoutProps> = ({
           <div className="flex text-lg font-semibold mb-3">
             <div className="flex-grow text-left">CASH RECEIVED:</div>
             <div className="flex text-right items-center">
-              <span className="mr-2">$</span>
+              <span className="mr-2">€</span>
               <input 
                 value={cash || ''} 
                 type="number" 
@@ -163,7 +163,7 @@ const Checkout: React.FC<CheckoutProps> = ({
                 className="bg-white rounded-lg shadow hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-orange-500 px-2 py-2 text-sm transition-all"
                 onClick={() => addCashAmount(amount)}
               >
-                +${amount}
+                +€{amount}
               </button>
             ))}
             <button 
@@ -191,7 +191,7 @@ const Checkout: React.FC<CheckoutProps> = ({
                 {change >= 0 ? 'CHANGE:' : 'INSUFFICIENT:'}
               </div>
               <div className="text-right">
-                ${Math.abs(change).toFixed(2)}
+                €{Math.abs(change).toFixed(2)}
               </div>
             </div>
           )}
@@ -202,7 +202,7 @@ const Checkout: React.FC<CheckoutProps> = ({
       {paymentMethod === 'card' && (
         <div className="bg-blue-50 rounded-lg p-3 text-blue-700 text-center">
           <p className="font-semibold">Card Payment</p>
-          <p className="text-sm">Process payment of ${totals.total.toFixed(2)}</p>
+          <p className="text-sm">Process payment of €{totals.total.toFixed(2)}</p>
         </div>
       )}
 
@@ -222,7 +222,7 @@ const Checkout: React.FC<CheckoutProps> = ({
       {/* Payment Validation Message */}
       {!isValidPayment && paymentMethod === 'cash' && cash > 0 && (
         <p className="text-red-600 text-sm">
-          Insufficient cash. Need ${(totals.total - cash).toFixed(2)} more.
+          Insufficient cash. Need €{(totals.total - cash).toFixed(2)} more.
         </p>
       )}
     </div>

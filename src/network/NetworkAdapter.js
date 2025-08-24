@@ -187,6 +187,129 @@ class NetworkAdapter {
     async confirmPasswordReset(token, newPassword) {
         return this.post('/auth/password-reset-confirm', { token, newPassword });
     }
+
+    // Menu Management APIs
+    async getMenuItems(params = {}) {
+        return this.get('/menu_items', params);
+    }
+
+    async getMenuItem(itemId) {
+        return this.get(`/menu_items/${itemId}`);
+    }
+
+    async createMenuItem(itemData) {
+        return this.post('/menu_items', itemData);
+    }
+
+    async updateMenuItem(itemId, itemData) {
+        return this.put(`/menu_items/${itemId}`, itemData);
+    }
+
+    async deleteMenuItem(itemId) {
+        return this.delete(`/menu_items/${itemId}`);
+    }
+
+    async bulkImportMenu(formData) {
+        return this.post('/menu_items/bulk-import', formData);
+    }
+
+    // Inventory Management APIs
+    async getInventory() {
+        return this.get('/inventory');
+    }
+
+    async getInventoryItem(itemId) {
+        return this.get(`/inventory/${itemId}`);
+    }
+
+    async updateInventoryItem(itemId, itemData) {
+        return this.put(`/inventory/${itemId}`, itemData);
+    }
+
+    async adjustInventoryStock(itemId, adjustmentData) {
+        return this.post(`/inventory/${itemId}/adjust`, adjustmentData);
+    }
+
+    async exportInventory() {
+        return this.get('/inventory/export');
+    }
+
+    // Orders and Sales APIs
+    async createOrder(orderData) {
+        return this.post('/orders', orderData);
+    }
+
+    async getOrders(params = {}) {
+        return this.get('/orders', params);
+    }
+
+    async getOrder(orderId) {
+        return this.get(`/orders/${orderId}`);
+    }
+
+    async refundOrder(orderId, refundData) {
+        return this.post(`/orders/${orderId}/refund`, refundData);
+    }
+
+    async reprintReceipt(orderId) {
+        return this.post(`/orders/${orderId}/reprint-receipt`);
+    }
+
+    // Reporting APIs
+    async getSalesDashboard(params) {
+        return this.get('/sales/dashboard', params);
+    }
+
+    async getDailySalesReport(date) {
+        return this.get('/reports/daily-sales', { date });
+    }
+
+    async sendDailySalesEmail(emailData) {
+        return this.post('/reports/email-daily-summary', emailData);
+    }
+
+    // Alerts APIs
+    async getAlerts() {
+        return this.get('/alerts');
+    }
+
+    async getAlert(alertId) {
+        return this.get(`/alerts/${alertId}`);
+    }
+
+    async dismissAlert(alertId) {
+        return this.patch(`/alerts/${alertId}/dismiss`);
+    }
+
+    // System APIs
+    async getHealthStatus() {
+        return this.get('/health');
+    }
+
+    async getSystemSettings() {
+        return this.get('/settings');
+    }
+
+    async updateSystemSettings(settings) {
+        return this.put('/settings', settings);
+    }
+
+    // Image Upload APIs
+    async uploadMenuItemImage(formData) {
+        return this.post('/upload/image', formData);
+    }
+
+    async uploadBulkImages(formData) {
+        return this.post('/upload/bulk-images', formData);
+    }
+
+    async getImageManagement() {
+        return this.get('/images/management');
+    }
+
+    async removeMenuItemImage(itemId) {
+        return this.delete(`/images/management/${itemId}`);
+    }
 }
 
 export const networkAdapter = new NetworkAdapter();

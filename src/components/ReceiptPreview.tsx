@@ -17,6 +17,7 @@ interface ReceiptPreviewProps {
   paymentMethod: 'cash' | 'card';
   orderTimestamp?: Date;
   orderId?: string;
+  isReprint?: boolean;
 }
 
 const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
@@ -33,7 +34,8 @@ const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
   change = 0,
   paymentMethod,
   orderTimestamp = new Date(),
-  orderId
+  orderId,
+  isReprint = false
 }) => {
   const [printOptions, setPrintOptions] = useState({
     includeLogo: true,
@@ -60,22 +62,60 @@ const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
                 margin: 0; 
                 padding: 20px;
                 line-height: 1.4;
+                color: #000;
               }
               .receipt { max-width: 300px; margin: 0 auto; }
-              .center { text-align: center; }
-              .bold { font-weight: bold; }
-              .divider { border-top: 1px dashed #000; margin: 10px 0; }
-              .flex { display: flex; justify-content: space-between; }
-              .logo { font-size: 18px; font-weight: bold; margin-bottom: 10px; }
-              .footer { margin-top: 20px; font-size: 10px; }
-              @media print { body { margin: 0; padding: 10px; } }
+              .text-center { text-align: center; }
+              .text-xs { font-size: 0.75em; }
+              .text-sm { font-size: 0.875em; }
+              .text-base { font-size: 1em; }
+              .text-lg { font-size: 1.125em; }
+              .font-bold { font-weight: bold; }
+              .mb-2 { margin-bottom: 8px; }
+              .mb-3 { margin-bottom: 12px; }
+              .mb-4 { margin-bottom: 16px; }
+              .mt-2 { margin-top: 8px; }
+              .my-3 { margin-top: 12px; margin-bottom: 12px; }
+              .p-4 { padding: 16px; }
+              .pt-1 { padding-top: 4px; }
+              .space-y-1 > * + * { margin-top: 4px; }
+              .border-t { border-top: 1px solid #000; }
+              .border-dashed { border-style: dashed; }
+              .border-gray-400 { border-color: #9ca3af; }
+              .border-gray-400 { border-color: #666; }
+              .flex { display: flex; }
+              .justify-between { justify-content: space-between; }
+              .flex-1 { flex: 1; }
+              .text-gray-600 { color: #666; }
+              .italic { font-style: italic; }
+              .copy-text { 
+                background-color: #f0f0f0;
+                padding: 4px 8px;
+                font-weight: bold;
+                text-align: center;
+                margin: 8px 0;
+                border: 1px solid #ccc;
+              }
+              @media print { 
+                body { margin: 0; padding: 10px; } 
+                .copy-text { background-color: #e0e0e0 !important; }
+              }
             </style>
           </head>
           <body>
             <div class="receipt">
               ${receiptElement.innerHTML}
             </div>
-            <script>window.print(); window.close();</script>
+            <script>
+              window.onload = function() {
+                setTimeout(function() {
+                  window.print();
+                }, 100);
+              };
+              window.onafterprint = function() {
+                window.close();
+              };
+            </script>
           </body>
           </html>
         `);
@@ -206,6 +246,13 @@ const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
                   </>
                 )}
 
+                {/* Copy Notice for Reprints */}
+                {isReprint && (
+                  <div className="copy-text text-center font-bold mb-3">
+                    *** COPY ***
+                  </div>
+                )}
+
                 {/* Order Info */}
                 <div className="mb-3">
                   <div className="flex justify-between text-xs">
@@ -235,10 +282,10 @@ const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
                           {item.product.name}
                           {item.product.size !== 'Regular' && ` (${item.product.size})`}
                         </span>
-                        <span>${(item.quantity * item.product.price).toFixed(2)}</span>
+                        <span>€{(item.quantity * item.product.price).toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between text-xs text-gray-600">
-                        <span>  {item.quantity} x ${item.product.price.toFixed(2)}</span>
+                        <span>  {item.quantity} x €{item.product.price.toFixed(2)}</span>
                         <span></span>
                       </div>
                       {item.notes && (
@@ -256,27 +303,27 @@ const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
                 <div className="space-y-1">
                   <div className="flex justify-between">
                     <span>Subtotal:</span>
-                    <span>${subtotal.toFixed(2)}</span>
+                    <span>€{subtotal.toFixed(2)}</span>
                   </div>
                   
                   {discount && discountAmount > 0 && (
                     <div className="flex justify-between text-sm">
                       <span>
-                        Discount ({discount.type === 'percentage' ? `${discount.value}%` : `$${discount.value}`}):
+                        Discount ({discount.type === 'percentage' ? `${discount.value}%` : `€${discount.value}`}):
                       </span>
-                      <span>-${discountAmount.toFixed(2)}</span>
+                      <span>-€{discountAmount.toFixed(2)}</span>
                     </div>
                   )}
                   
                   <div className="flex justify-between">
                     <span>Tax (8%):</span>
-                    <span>${tax.toFixed(2)}</span>
+                    <span>€{tax.toFixed(2)}</span>
                   </div>
                   
                   <div className="border-t border-gray-400 pt-1 mt-2">
                     <div className="flex justify-between font-bold">
                       <span>TOTAL:</span>
-                      <span>${total.toFixed(2)}</span>
+                      <span>€{total.toFixed(2)}</span>
                     </div>
                   </div>
                   
@@ -284,11 +331,11 @@ const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
                     <>
                       <div className="flex justify-between mt-2">
                         <span>Cash:</span>
-                        <span>${cashReceived.toFixed(2)}</span>
+                        <span>€{cashReceived.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Change:</span>
-                        <span>${change.toFixed(2)}</span>
+                        <span>€{change.toFixed(2)}</span>
                       </div>
                     </>
                   )}

@@ -131,7 +131,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // Mock users for demonstration
 const MOCK_USERS: User[] = [
   {
-    id: 'admin-001',
+    id: '550e8400-e29b-41d4-a716-446655440001',  // Valid UUID for admin
     username: 'admin',
     firstName: 'John',
     lastName: 'Administrator',
@@ -144,7 +144,7 @@ const MOCK_USERS: User[] = [
     pinCode: '1234'
   },
   {
-    id: 'manager-001',
+    id: '550e8400-e29b-41d4-a716-446655440002',  // Valid UUID for manager
     username: 'manager',
     firstName: 'Sarah',
     lastName: 'Manager',
@@ -157,7 +157,7 @@ const MOCK_USERS: User[] = [
     pinCode: '2345'
   },
   {
-    id: 'cashier-001',
+    id: '550e8400-e29b-41d4-a716-446655440003',  // Valid UUID for cashier
     username: 'cashier',
     firstName: 'Mike',
     lastName: 'Cashier',
@@ -170,7 +170,7 @@ const MOCK_USERS: User[] = [
     pinCode: '3456'
   },
   {
-    id: 'trainee-001',
+    id: '550e8400-e29b-41d4-a716-446655440004',  // Valid UUID for trainee
     username: 'trainee',
     firstName: 'Emma',
     lastName: 'Trainee',

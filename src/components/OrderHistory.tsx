@@ -7,12 +7,16 @@ interface OrderHistoryProps {
   orders: Order[];
   onReprintReceipt: (order: Order) => void;
   onClose: () => void;
+  loading?: boolean;
+  onRefresh?: () => void;
 }
 
 const OrderHistory: React.FC<OrderHistoryProps> = ({ 
   orders, 
   onReprintReceipt, 
-  onClose 
+  onClose,
+  loading = false,
+  onRefresh
 }) => {
   const { hasPermission } = useAuth();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -113,8 +117,8 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                       )}
                     </div>
                     <div className="col-span-2 text-center">{item.quantity}</div>
-                    <div className="col-span-2 text-right">${item.product.price.toFixed(2)}</div>
-                    <div className="col-span-2 text-right">${(item.quantity * item.product.price).toFixed(2)}</div>
+                    <div className="col-span-2 text-right">€{item.product.price.toFixed(2)}</div>
+                    <div className="col-span-2 text-right">€{(item.quantity * item.product.price).toFixed(2)}</div>
                   </div>
                 ))}
               </div>
@@ -124,34 +128,34 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
             <div className="bg-gray-50 p-4 rounded-lg space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Subtotal:</span>
-                <span>${selectedOrder.subtotal.toFixed(2)}</span>
+                <span>€{selectedOrder.subtotal.toFixed(2)}</span>
               </div>
               {selectedOrder.discount && (
                 <div className="flex justify-between text-sm text-green-600">
                   <span>
-                    Discount ({selectedOrder.discount.type === 'percentage' ? `${selectedOrder.discount.value}%` : `$${selectedOrder.discount.value}`}):
+                    Discount ({selectedOrder.discount.type === 'percentage' ? `${selectedOrder.discount.value}%` : `€${selectedOrder.discount.value}`}):
                     <div className="text-xs text-gray-500">{selectedOrder.discount.reason}</div>
                   </span>
-                  <span>-${selectedOrder.discountAmount.toFixed(2)}</span>
+                  <span>-€{selectedOrder.discountAmount.toFixed(2)}</span>
                 </div>
               )}
               <div className="flex justify-between text-sm">
                 <span>Tax:</span>
-                <span>${selectedOrder.tax.toFixed(2)}</span>
+                <span>€{selectedOrder.tax.toFixed(2)}</span>
               </div>
               <div className="flex justify-between font-bold text-lg border-t pt-2">
                 <span>TOTAL:</span>
-                <span>${selectedOrder.total.toFixed(2)}</span>
+                <span>€{selectedOrder.total.toFixed(2)}</span>
               </div>
               {selectedOrder.paymentMethod === 'cash' && (
                 <>
                   <div className="flex justify-between text-sm">
                     <span>Cash Received:</span>
-                    <span>${selectedOrder.cashReceived.toFixed(2)}</span>
+                    <span>€{selectedOrder.cashReceived.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Change:</span>
-                    <span>${selectedOrder.change.toFixed(2)}</span>
+                    <span>€{selectedOrder.change.toFixed(2)}</span>
                   </div>
                 </>
               )}
@@ -196,20 +200,42 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b">
           <h2 className="text-xl font-bold text-gray-800">Order History</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 p-1"
-            aria-label="Close order history"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-2">
+            {onRefresh && (
+              <button
+                onClick={onRefresh}
+                disabled={loading}
+                className="text-gray-500 hover:text-gray-700 p-1 disabled:opacity-50"
+                aria-label="Refresh orders"
+                title="Refresh orders"
+              >
+                <svg className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="text-gray-500 hover:text-gray-700 p-1"
+              aria-label="Close order history"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Orders List */}
         <div className="p-6">
-          {sortedOrders.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-8 text-gray-500">
+              <svg className="w-16 h-16 mx-auto mb-4 text-gray-300 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <p>Loading orders...</p>
+            </div>
+          ) : sortedOrders.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -246,7 +272,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({
                     
                     {/* Total */}
                     <div className="col-span-2 text-sm font-medium">
-                      ${getOrderTotal(order)}
+                      €{getOrderTotal(order)}
                     </div>
                     
                     {/* Status & Actions */}

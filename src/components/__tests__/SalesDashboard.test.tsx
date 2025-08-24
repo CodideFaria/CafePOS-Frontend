@@ -1,21 +1,22 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import { vi } from 'vitest';
 import SalesDashboard from '../SalesDashboard';
 import { AuthProvider } from '../../contexts/AuthContext';
 import { networkAdapter } from '../../network/NetworkAdapter';
 import { DashboardUtils } from '../../utils/dashboardUtils';
 
 // Mock the NetworkAdapter
-jest.mock('../../network/NetworkAdapter', () => ({
+vi.mock('../../network/NetworkAdapter', () => ({
   networkAdapter: {
-    get: jest.fn()
+    get: vi.fn()
   }
 }));
 
 // Mock performance.now for consistent testing
 const mockPerformance = {
-  now: jest.fn(() => 1000),
+  now: vi.fn(() => 1000),
   memory: {
     usedJSHeapSize: 1000000
   }
@@ -43,16 +44,16 @@ const mockAuthContext = {
   isAuthenticated: true,
   loading: false,
   error: null,
-  login: jest.fn(),
-  logout: jest.fn(),
-  hasPermission: jest.fn((permission) => ['reports.view', 'reports.export'].includes(permission)),
-  hasAnyPermission: jest.fn(),
-  hasAllPermissions: jest.fn(),
-  updateUser: jest.fn(),
-  switchUser: jest.fn()
+  login: vi.fn(),
+  logout: vi.fn(),
+  hasPermission: vi.fn((permission) => ['reports.view', 'reports.export'].includes(permission)),
+  hasAnyPermission: vi.fn(),
+  hasAllPermissions: vi.fn(),
+  updateUser: vi.fn(),
+  switchUser: vi.fn()
 };
 
-jest.mock('../../contexts/AuthContext', () => ({
+vi.mock('../../contexts/AuthContext', () => ({
   useAuth: () => mockAuthContext,
   AuthProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>
 }));
@@ -103,24 +104,24 @@ const mockSalesData = {
   }
 };
 
-jest.mock('../../utils/dashboardUtils', () => ({
+vi.mock('../../utils/dashboardUtils', () => ({
   DashboardUtils: {
-    generateMockSalesData: jest.fn(() => mockSalesData),
-    getDateRangesForPeriod: jest.fn(() => ({
+    generateMockSalesData: vi.fn(() => mockSalesData),
+    getDateRangesForPeriod: vi.fn(() => ({
       startDate: new Date('2024-01-01'),
       endDate: new Date('2024-01-31'),
       label: 'This Month'
     })),
-    formatCurrency: jest.fn((amount) => `$${amount.toFixed(2)}`),
-    calculatePercentageChange: jest.fn(() => 10.5),
-    getTrendIndicator: jest.fn(() => ({ direction: 'up', color: 'text-green-600', icon: '📈' }))
+    formatCurrency: vi.fn((amount) => `$${amount.toFixed(2)}`),
+    calculatePercentageChange: vi.fn(() => 10.5),
+    getTrendIndicator: vi.fn(() => ({ direction: 'up', color: 'text-green-600', icon: '📈' }))
   }
 }));
 
 describe('SalesDashboard', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    (networkAdapter.get as jest.Mock).mockRejectedValue(new Error('API not available'));
+    vi.clearAllMocks();
+    (networkAdapter.get as any).mockRejectedValue(new Error('API not available'));
   });
 
   describe('Permission-based Rendering', () => {
@@ -133,7 +134,7 @@ describe('SalesDashboard', () => {
     });
 
     it('should show permission denied when user lacks reports.view permission', async () => {
-      mockAuthContext.hasPermission = jest.fn(() => false);
+      mockAuthContext.hasPermission = vi.fn(() => false);
 
       render(<SalesDashboard />);
 
@@ -176,7 +177,7 @@ describe('SalesDashboard', () => {
     });
 
     it('should display error message when data fetching fails completely', async () => {
-      (DashboardUtils.generateMockSalesData as jest.Mock).mockImplementation(() => {
+      (DashboardUtils.generateMockSalesData as any).mockImplementation(() => {
         throw new Error('Mock data generation failed');
       });
 
@@ -247,7 +248,7 @@ describe('SalesDashboard', () => {
     });
 
     it('should hide export button for users without reports.export permission', async () => {
-      mockAuthContext.hasPermission = jest.fn((permission) => permission === 'reports.view');
+      mockAuthContext.hasPermission = vi.fn((permission) => permission === 'reports.view');
 
       render(<SalesDashboard />);
 
@@ -345,7 +346,7 @@ describe('SalesDashboard', () => {
 
   describe('Performance Monitoring', () => {
     it('should display performance warning for slow load times', async () => {
-      (mockPerformance.now as jest.Mock)
+      (mockPerformance.now as any)
         .mockReturnValueOnce(0)  // Start time
         .mockReturnValueOnce(2500); // End time (2.5 seconds)
 
@@ -357,7 +358,7 @@ describe('SalesDashboard', () => {
     });
 
     it('should not show performance warning for fast load times', async () => {
-      (mockPerformance.now as jest.Mock)
+      (mockPerformance.now as any)
         .mockReturnValueOnce(0)  // Start time
         .mockReturnValueOnce(800); // End time (0.8 seconds)
 
@@ -371,7 +372,7 @@ describe('SalesDashboard', () => {
 
   describe('Error Handling', () => {
     it('should show retry button when data loading fails', async () => {
-      (DashboardUtils.generateMockSalesData as jest.Mock).mockImplementation(() => {
+      (DashboardUtils.generateMockSalesData as any).mockImplementation(() => {
         throw new Error('Data generation failed');
       });
 
@@ -383,7 +384,7 @@ describe('SalesDashboard', () => {
     });
 
     it('should retry data fetching when retry button is clicked', async () => {
-      (DashboardUtils.generateMockSalesData as jest.Mock)
+      (DashboardUtils.generateMockSalesData as any)
         .mockImplementationOnce(() => { throw new Error('First attempt failed'); })
         .mockImplementationOnce(() => mockSalesData);
 
@@ -441,7 +442,7 @@ describe('SalesDashboard', () => {
 
   describe('Integration with AdminPanel', () => {
     it('should handle close callback properly', async () => {
-      const mockOnClose = jest.fn();
+      const mockOnClose = vi.fn();
       render(<SalesDashboard onClose={mockOnClose} />);
 
       await waitFor(() => {

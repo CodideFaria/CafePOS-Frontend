@@ -433,7 +433,7 @@ export const exportPurchaseOrderToCSV = (
   
   // Add summary row
   csvContent += '\n';
-  csvContent += `TOTAL ORDER VALUE,,,,,,,,,$${totalOrderValue.toFixed(2)},\n`;
+  csvContent += `TOTAL ORDER VALUE,,,,,,,,,€${totalOrderValue.toFixed(2)},\n`;
   csvContent += `GENERATED ON,${formatDateForExport(new Date(), opts.dateFormat)},,,,,,,,\n`;
 
   downloadCSV(csvContent, filename);

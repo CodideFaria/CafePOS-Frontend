@@ -2,14 +2,15 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
+import { vi } from 'vitest';
 import AuthenticationForm from '../AuthenticationForm';
 import { AuthProvider, useAuth } from '../../contexts/AuthContext';
 import { DEFAULT_AUTH_CONFIG } from '../../types/auth';
 
 // Mock the useAuth hook
 const mockAuth = {
-  login: jest.fn(),
-  logout: jest.fn(),
+  login: vi.fn(),
+  logout: vi.fn(),
   loading: false,
   error: null,
   isAuthenticated: false,
@@ -18,22 +19,22 @@ const mockAuth = {
   lockoutUntil: null,
   lastActivity: null,
   sessionExpiry: null,
-  hasPermission: jest.fn(),
-  hasAnyPermission: jest.fn(),
-  hasAllPermissions: jest.fn(),
-  updateUser: jest.fn(),
-  switchUser: jest.fn(),
-  updateActivity: jest.fn()
+  hasPermission: vi.fn(),
+  hasAnyPermission: vi.fn(),
+  hasAllPermissions: vi.fn(),
+  updateUser: vi.fn(),
+  switchUser: vi.fn(),
+  updateActivity: vi.fn()
 };
 
-jest.mock('../../contexts/AuthContext', () => ({
-  ...jest.requireActual('../../contexts/AuthContext'),
+vi.mock('../../contexts/AuthContext', () => ({
+  ...vi.importActual('../../contexts/AuthContext'),
   useAuth: () => mockAuth
 }));
 
 describe('AuthenticationForm', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockAuth.loading = false;
     mockAuth.error = null;
     mockAuth.failedAttempts = 0;
@@ -289,7 +290,7 @@ describe('AuthenticationForm', () => {
 
     it('should call onForgotPassword when forgot password is clicked', async () => {
       const user = userEvent.setup();
-      const mockOnForgotPassword = jest.fn();
+      const mockOnForgotPassword = vi.fn();
       render(<AuthenticationForm defaultMode="password" onForgotPassword={mockOnForgotPassword} />);
 
       const forgotPasswordButton = screen.getByRole('button', { name: /forgot password/i });
@@ -457,7 +458,7 @@ describe('AuthenticationForm', () => {
 
   describe('Callbacks', () => {
     it('should call onSuccess when provided', async () => {
-      const mockOnSuccess = jest.fn();
+      const mockOnSuccess = vi.fn();
       const mockUser = { id: '1', username: 'test', role: 'cashier' };
       
       // We need to mock the login to actually succeed and update the auth state

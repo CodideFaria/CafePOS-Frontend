@@ -177,8 +177,8 @@ export class DashboardUtils {
   /**
    * Format currency values
    */
-  static formatCurrency(amount: number, currency: string = 'USD'): string {
-    return new Intl.NumberFormat('en-US', {
+  static formatCurrency(amount: number, currency: string = 'EUR'): string {
+    return new Intl.NumberFormat('de-DE', {
       style: 'currency',
       currency: currency
     }).format(amount);

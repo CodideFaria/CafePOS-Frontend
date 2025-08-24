@@ -143,7 +143,7 @@ const DiscountModal: React.FC<DiscountModalProps> = ({
           {currentDiscount && (
             <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
               <p className="text-sm text-yellow-800">
-                <strong>Current Discount:</strong> {currentDiscount.type === 'percentage' ? `${currentDiscount.value}%` : `$${currentDiscount.value}`} - {currentDiscount.reason}
+                <strong>Current Discount:</strong> {currentDiscount.type === 'percentage' ? `${currentDiscount.value}%` : `€${currentDiscount.value}`} - {currentDiscount.reason}
               </p>
             </div>
           )}
@@ -152,7 +152,7 @@ const DiscountModal: React.FC<DiscountModalProps> = ({
           <div className="p-3 bg-gray-50 rounded-lg">
             <div className="flex justify-between text-sm">
               <span>Subtotal:</span>
-              <span>${subtotal.toFixed(2)}</span>
+              <span>€{subtotal.toFixed(2)}</span>
             </div>
           </div>
 
@@ -169,7 +169,7 @@ const DiscountModal: React.FC<DiscountModalProps> = ({
                   onClick={() => applyPresetDiscount(preset)}
                   className="p-2 text-xs bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
                 >
-                  {preset.type === 'percentage' ? `${preset.value}%` : `$${preset.value}`}
+                  {preset.type === 'percentage' ? `${preset.value}%` : `€${preset.value}`}
                   <br />
                   <span className="text-blue-600">{preset.reason}</span>
                 </button>
@@ -201,7 +201,7 @@ const DiscountModal: React.FC<DiscountModalProps> = ({
                   onChange={(e) => setDiscountType(e.target.value as 'fixed')}
                   className="mr-2"
                 />
-                Fixed Amount ($)
+                Fixed Amount (€)
               </label>
             </div>
           </div>
@@ -225,7 +225,7 @@ const DiscountModal: React.FC<DiscountModalProps> = ({
                 placeholder={discountType === 'percentage' ? '10' : '5.00'}
               />
               <div className="absolute right-3 top-2 text-gray-500">
-                {discountType === 'percentage' ? '%' : '$'}
+                {discountType === 'percentage' ? '%' : '€'}
               </div>
             </div>
             {errors.discountValue && (
@@ -238,11 +238,11 @@ const DiscountModal: React.FC<DiscountModalProps> = ({
             <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
               <div className="flex justify-between text-sm">
                 <span>Discount Amount:</span>
-                <span className="font-semibold text-green-700">-${previewDiscountAmount.toFixed(2)}</span>
+                <span className="font-semibold text-green-700">-€{previewDiscountAmount.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>New Total:</span>
-                <span className="font-semibold">${(subtotal - previewDiscountAmount).toFixed(2)}</span>
+                <span className="font-semibold">€{(subtotal - previewDiscountAmount).toFixed(2)}</span>
               </div>
             </div>
           )}
