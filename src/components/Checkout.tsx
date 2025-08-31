@@ -31,7 +31,8 @@ const Checkout: React.FC<CheckoutProps> = ({
     const paymentData: PaymentData = {
       cash: paymentMethod === 'cash' ? cash : totals.total,
       total: totals.total,
-      change: paymentMethod === 'cash' ? change : 0
+      change: paymentMethod === 'cash' ? change : 0,
+      paymentMethod: paymentMethod
     };
     
     onSubmit(paymentData);

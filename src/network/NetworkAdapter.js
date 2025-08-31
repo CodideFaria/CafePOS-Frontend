@@ -7,11 +7,11 @@ class NetworkAdapter {
 
     // Get authentication token from localStorage
     #getAuthToken() {
-        const user = localStorage.getItem('cafepos_user');
+        const user = localStorage.getItem('cafepos_auth_state');
         if (user) {
             try {
                 const userData = JSON.parse(user);
-                return userData.id; // Using user ID as token for demo
+                return userData.token;
             } catch (error) {
                 return null;
             }

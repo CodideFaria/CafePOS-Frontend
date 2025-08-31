@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { AuthProvider, useAuth, MOCK_USERS } from '../AuthContext';
+import { AuthProvider, useAuth } from '../AuthContext';
 import { networkAdapter } from '../../network/NetworkAdapter';
 
 // Mock the NetworkAdapter

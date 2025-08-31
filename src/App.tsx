@@ -162,7 +162,7 @@ function App() {
       discountAmount: orderTotals.discountAmount,
       discountReason: discount?.reason || '',
       total: paymentData.total,
-      paymentMethod: paymentData.cash > 0 ? 'cash' : 'card',
+      paymentMethod: paymentData.paymentMethod,
       amountPaid: paymentData.cash > 0 ? paymentData.cash : paymentData.total,
       changeGiven: paymentData.change,
       createdBy: user?.id || 'system',
@@ -235,7 +235,8 @@ function App() {
     setPaymentData({
       cash: order.cashReceived,
       total: order.total,
-      change: order.change
+      change: order.change,
+      paymentMethod: order.paymentMethod
     });
     setCartItems([...order.items]);
     setDiscount(order.discount ? { ...order.discount } : null);

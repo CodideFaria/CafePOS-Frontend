@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { MOCK_USERS } from '../contexts/AuthContext';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -42,17 +41,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
     }
   }, [username, password, login, onClose]);
 
-  const handleQuickLogin = useCallback(async (userRole: string) => {
-    const user = MOCK_USERS.find(u => u.role === userRole);
-    if (user?.pinCode) {
-      try {
-        await login({ pinCode: user.pinCode });
-        onClose?.();
-      } catch (error) {
-        // Error is handled by the context
-      }
-    }
-  }, [login, onClose]);
 
   const handlePinInput = (digit: string) => {
     if (pinCode.length < 4) {
@@ -217,44 +205,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
             </form>
           )}
 
-          {/* Quick Login Demo Section */}
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <p className="text-sm text-gray-600 mb-3 text-center">Demo Quick Login:</p>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => handleQuickLogin('admin')}
-                disabled={loading}
-                className="p-3 text-left bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50"
-              >
-                <div className="font-semibold text-red-800">👑 Admin</div>
-                <div className="text-xs text-red-600">PIN: 1234</div>
-              </button>
-              <button
-                onClick={() => handleQuickLogin('manager')}
-                disabled={loading}
-                className="p-3 text-left bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50"
-              >
-                <div className="font-semibold text-blue-800">👔 Manager</div>
-                <div className="text-xs text-blue-600">PIN: 2345</div>
-              </button>
-              <button
-                onClick={() => handleQuickLogin('cashier')}
-                disabled={loading}
-                className="p-3 text-left bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors disabled:opacity-50"
-              >
-                <div className="font-semibold text-green-800">💰 Cashier</div>
-                <div className="text-xs text-green-600">PIN: 3456</div>
-              </button>
-              <button
-                onClick={() => handleQuickLogin('trainee')}
-                disabled={loading}
-                className="p-3 text-left bg-yellow-50 border border-yellow-200 rounded-lg hover:bg-yellow-100 transition-colors disabled:opacity-50"
-              >
-                <div className="font-semibold text-yellow-800">📚 Trainee</div>
-                <div className="text-xs text-yellow-600">PIN: 4567</div>
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     </div>

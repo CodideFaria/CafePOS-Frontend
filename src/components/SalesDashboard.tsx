@@ -348,7 +348,8 @@ const SalesDashboard: React.FC<SalesDashboardProps> = ({
             <div className="bg-white rounded-lg shadow-md p-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">🏆 Top Selling Products</h3>
               <div className="space-y-3">
-                {salesData.topProducts.slice(0, 5).map((product, index) => (
+                {salesData.topProducts && salesData.topProducts.length > 0 ? (
+                  salesData.topProducts.slice(0, 5).map((product, index) => (
                   <div key={product.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors">
                     <div className="flex items-center space-x-3">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
@@ -369,7 +370,13 @@ const SalesDashboard: React.FC<SalesDashboardProps> = ({
                       <div className="text-sm text-gray-600">{product.quantitySold} sold</div>
                     </div>
                   </div>
-                ))}
+                ))
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <div className="text-4xl mb-2">📦</div>
+                    <p>No top products data available</p>
+                  </div>
+                )}
               </div>
             </div>
 

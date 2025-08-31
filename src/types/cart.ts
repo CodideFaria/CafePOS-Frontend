@@ -37,6 +37,7 @@ export interface PaymentData {
   cash: number;
   total: number;
   change: number;
+  paymentMethod: 'cash' | 'card';
 }
 
 export const TAX_RATE = 0.08; // 8% tax rate

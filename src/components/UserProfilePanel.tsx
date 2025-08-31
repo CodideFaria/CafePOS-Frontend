@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { MOCK_USERS } from '../contexts/AuthContext';
 import { formatDateTime } from '../utils/dateUtils';
+import { networkAdapter } from '../network/NetworkAdapter';
+import { User } from '../types/auth';
 
 interface UserProfilePanelProps {
   isOpen: boolean;
@@ -11,6 +12,8 @@ interface UserProfilePanelProps {
 const UserProfilePanel: React.FC<UserProfilePanelProps> = ({ isOpen, onClose }) => {
   const { user, logout, switchUser, hasPermission } = useAuth();
   const [showUserSwitcher, setShowUserSwitcher] = useState(false);
+  const [availableUsers, setAvailableUsers] = useState<User[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
 
   const getRoleColor = (role: string) => {
     switch (role) {
@@ -37,7 +40,7 @@ const UserProfilePanel: React.FC<UserProfilePanelProps> = ({ isOpen, onClose }) 
     onClose();
   };
 
-  const handleSwitchUser = (targetUser: typeof MOCK_USERS[0]) => {
+  const handleSwitchUser = (targetUser: User) => {
     try {
       switchUser(targetUser);
       setShowUserSwitcher(false);
@@ -46,6 +49,29 @@ const UserProfilePanel: React.FC<UserProfilePanelProps> = ({ isOpen, onClose }) 
       console.error('Failed to switch user:', error);
     }
   };
+
+  const fetchAvailableUsers = async () => {
+    if (!user || user.role !== 'admin') return;
+    
+    setLoadingUsers(true);
+    try {
+      const response = await networkAdapter.getUsers();
+      if (response && response.success && response.data) {
+        const users = Array.isArray(response.data) ? response.data : response.data.users || [];
+        setAvailableUsers(users.filter(u => u.id !== user.id && u.isActive));
+      }
+    } catch (error) {
+      console.error('Failed to fetch users:', error);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showUserSwitcher && availableUsers.length === 0) {
+      fetchAvailableUsers();
+    }
+  }, [showUserSwitcher]);
 
   if (!isOpen || !user) return null;
 
@@ -175,25 +201,36 @@ const UserProfilePanel: React.FC<UserProfilePanelProps> = ({ isOpen, onClose }) 
 
               {showUserSwitcher && (
                 <div className="mt-3 space-y-2">
-                  {MOCK_USERS.filter(u => u.id !== user.id && u.isActive).map(switchUser => (
-                    <button
-                      key={switchUser.id}
-                      onClick={() => handleSwitchUser(switchUser)}
-                      className="w-full p-3 text-left bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <span className="text-lg">{getRoleIcon(switchUser.role)}</span>
-                        <div className="flex-1">
-                          <div className="font-medium text-gray-900">
-                            {switchUser.firstName} {switchUser.lastName}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {switchUser.role} • @{switchUser.username}
+                  {loadingUsers ? (
+                    <div className="p-3 text-center text-gray-500">
+                      <div className="animate-spin inline-block w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full mr-2"></div>
+                      Loading users...
+                    </div>
+                  ) : availableUsers.length === 0 ? (
+                    <div className="p-3 text-center text-gray-500">
+                      No other active users available
+                    </div>
+                  ) : (
+                    availableUsers.map(switchUser => (
+                      <button
+                        key={switchUser.id}
+                        onClick={() => handleSwitchUser(switchUser)}
+                        className="w-full p-3 text-left bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <span className="text-lg">{getRoleIcon(switchUser.role)}</span>
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-900">
+                              {switchUser.firstName} {switchUser.lastName}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {switchUser.role} • @{switchUser.username}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </button>
-                  ))}
+                      </button>
+                    ))
+                  )}
                 </div>
               )}
             </div>

@@ -1,8 +1,9 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { InventoryItem, StockMovement, StockAlert, calculateStockStatus, getStockAlerts, calculateInventoryStats } from '../types/inventory';
 import { formatDateTime, formatDate } from '../utils/dateUtils';
 import ExportModal from './ExportModal';
 import { useAuth } from '../contexts/AuthContext';
+import { networkAdapter } from '../network/NetworkAdapter';
 
 interface InventoryManagementProps {
   onClose: () => void;
@@ -11,75 +12,10 @@ interface InventoryManagementProps {
 const InventoryManagement: React.FC<InventoryManagementProps> = ({ onClose }) => {
   const { hasPermission } = useAuth();
   const [activeTab, setActiveTab] = useState<'overview' | 'items' | 'alerts' | 'movements'>('overview');
-  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([
-    {
-      id: 'inv-001',
-      name: 'Coffee Beans (Arabica)',
-      category: 'Coffee',
-      currentStock: 5,
-      minStockLevel: 10,
-      maxStockLevel: 50,
-      unit: 'kg',
-      costPerUnit: 25.00,
-      supplier: 'Premium Coffee Co.',
-      lastRestocked: new Date(2024, 0, 15),
-      expiryDate: new Date(2024, 5, 15),
-      status: 'low_stock',
-      location: 'Storage A1'
-    },
-    {
-      id: 'inv-002',
-      name: 'Milk',
-      category: 'Dairy',
-      currentStock: 0,
-      minStockLevel: 5,
-      maxStockLevel: 20,
-      unit: 'liters',
-      costPerUnit: 3.50,
-      supplier: 'Fresh Dairy Ltd.',
-      lastRestocked: new Date(2024, 0, 10),
-      expiryDate: new Date(2024, 0, 25),
-      status: 'out_of_stock',
-      location: 'Refrigerator'
-    },
-    {
-      id: 'inv-003',
-      name: 'Sugar',
-      category: 'Sweeteners',
-      currentStock: 15,
-      minStockLevel: 5,
-      maxStockLevel: 25,
-      unit: 'kg',
-      costPerUnit: 2.00,
-      supplier: 'Sweet Supply Co.',
-      lastRestocked: new Date(2024, 0, 20),
-      status: 'in_stock',
-      location: 'Pantry B2'
-    }
-  ]);
-  
-  const [stockMovements, setStockMovements] = useState<StockMovement[]>([
-    {
-      id: 'mov-001',
-      inventoryItemId: 'inv-001',
-      type: 'usage',
-      quantity: -2,
-      reason: 'Daily coffee preparation',
-      staffId: 'staff-001',
-      timestamp: new Date(),
-      notes: 'Morning shift usage'
-    },
-    {
-      id: 'mov-002',
-      inventoryItemId: 'inv-002',
-      type: 'usage',
-      quantity: -3,
-      reason: 'Latte and cappuccino orders',
-      staffId: 'staff-002',
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-      notes: 'High demand during lunch'
-    }
-  ]);
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [stockMovements, setStockMovements] = useState<StockMovement[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [showAddItem, setShowAddItem] = useState(false);
@@ -87,6 +23,51 @@ const InventoryManagement: React.FC<InventoryManagementProps> = ({ onClose }) =>
   const [showExportModal, setShowExportModal] = useState(false);
   const [filter, setFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Load inventory data from API
+  useEffect(() => {
+    const loadInventoryData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Load inventory items
+        const inventoryResponse = await networkAdapter.getInventory();
+        if (inventoryResponse && inventoryResponse.data && inventoryResponse.data.inventory) {
+          const items = inventoryResponse.data.inventory;
+          
+          // Transform API data to match frontend interface
+          const transformedItems = items.map((item: any) => ({
+            ...item,
+            lastRestocked: item.lastRestocked ? new Date(item.lastRestocked) : null,
+            expiryDate: item.expiryDate ? new Date(item.expiryDate) : null,
+            status: calculateStockStatus(item)
+          }));
+          
+          setInventoryItems(transformedItems);
+        } else {
+          // Fallback to empty array if API fails
+          console.warn('Failed to load inventory from API, using empty state');
+          setInventoryItems([]);
+        }
+
+        // TODO: Load stock movements from API when available
+        // For now, keep empty array
+        setStockMovements([]);
+
+      } catch (error) {
+        console.error('Error loading inventory data:', error);
+        setError('Failed to load inventory data');
+        // Use empty arrays as fallback
+        setInventoryItems([]);
+        setStockMovements([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadInventoryData();
+  }, []);
 
   // Update item status when data changes
   const updatedItems = useMemo(() => {
@@ -112,7 +93,7 @@ const InventoryManagement: React.FC<InventoryManagementProps> = ({ onClose }) =>
       filtered = filtered.filter(item =>
         item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.supplier.toLowerCase().includes(searchQuery.toLowerCase())
+        (item.supplier || '').toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
     
@@ -156,6 +137,41 @@ const InventoryManagement: React.FC<InventoryManagementProps> = ({ onClose }) =>
       default: return 'text-gray-600 bg-gray-100 border-gray-300';
     }
   };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg shadow-xl p-8 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading inventory data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg shadow-xl p-8 text-center">
+          <div className="text-red-500 mb-4">
+            <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <p className="text-gray-900 font-medium mb-2">Failed to load inventory</p>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-orange-500 text-white px-4 py-2 rounded-md hover:bg-orange-600"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -422,7 +438,7 @@ const InventoryManagement: React.FC<InventoryManagementProps> = ({ onClose }) =>
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ${(item.currentStock * item.costPerUnit).toFixed(2)}
+                            €{(item.currentStock * item.costPerUnit).toFixed(2)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <button

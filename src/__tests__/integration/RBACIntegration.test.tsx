@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import App from '../../App';
-import { AuthProvider, MOCK_USERS } from '../../contexts/AuthContext';
+import { AuthProvider } from '../../contexts/AuthContext';
 import { User } from '../../types/auth';
 
 // Mock the NetworkAdapter to avoid API calls during tests

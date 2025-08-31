@@ -128,109 +128,72 @@ const initialState: AuthState = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock users for demonstration
-const MOCK_USERS: User[] = [
-  {
-    id: '550e8400-e29b-41d4-a716-446655440001',  // Valid UUID for admin
-    username: 'admin',
-    firstName: 'John',
-    lastName: 'Administrator',
-    email: 'admin@cafepos.com',
-    role: 'admin',
-    permissions: getUserPermissions('admin'),
-    isActive: true,
-    createdAt: new Date('2024-01-01'),
-    lastLogin: new Date(),
-    pinCode: '1234'
-  },
-  {
-    id: '550e8400-e29b-41d4-a716-446655440002',  // Valid UUID for manager
-    username: 'manager',
-    firstName: 'Sarah',
-    lastName: 'Manager',
-    email: 'manager@cafepos.com',
-    role: 'manager',
-    permissions: getUserPermissions('manager'),
-    isActive: true,
-    createdAt: new Date('2024-01-01'),
-    lastLogin: new Date(),
-    pinCode: '2345'
-  },
-  {
-    id: '550e8400-e29b-41d4-a716-446655440003',  // Valid UUID for cashier
-    username: 'cashier',
-    firstName: 'Mike',
-    lastName: 'Cashier',
-    email: 'cashier@cafepos.com',
-    role: 'cashier',
-    permissions: getUserPermissions('cashier'),
-    isActive: true,
-    createdAt: new Date('2024-01-01'),
-    lastLogin: new Date(),
-    pinCode: '3456'
-  },
-  {
-    id: '550e8400-e29b-41d4-a716-446655440004',  // Valid UUID for trainee
-    username: 'trainee',
-    firstName: 'Emma',
-    lastName: 'Trainee',
-    email: 'trainee@cafepos.com',
-    role: 'trainee',
-    permissions: getUserPermissions('trainee'),
-    isActive: true,
-    createdAt: new Date('2024-01-01'),
-    lastLogin: new Date(),
-    pinCode: '4567'
-  }
-];
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
   // Check for existing session on mount and restore auth state
   useEffect(() => {
-    const savedUser = localStorage.getItem('cafepos_user');
-    const savedAuthState = localStorage.getItem('cafepos_auth_state');
-    
-    if (savedUser && savedAuthState) {
-      try {
-        const user = JSON.parse(savedUser);
-        const authState = JSON.parse(savedAuthState);
-        
-        // Check if session is still valid
-        const sessionExpiry = authState.sessionExpiry ? new Date(authState.sessionExpiry) : null;
-        const lockoutUntil = authState.lockoutUntil ? new Date(authState.lockoutUntil) : null;
-        
-        // If locked out and lockout hasn't expired, maintain lockout
-        if (lockoutUntil && lockoutUntil > new Date()) {
-          dispatch({ 
-            type: 'SET_LOCKOUT', 
-            payload: lockoutUntil 
-          });
-          return;
-        }
-        
-        // If session expired, clear everything
-        if (sessionExpiry && sessionExpiry < new Date()) {
+    const validateSession = async () => {
+      const savedUser = localStorage.getItem('cafepos_user');
+      const savedAuthState = localStorage.getItem('cafepos_auth_state');
+      
+      if (savedUser && savedAuthState) {
+        try {
+          const user = JSON.parse(savedUser);
+          const authState = JSON.parse(savedAuthState);
+          
+          // Check if session is still valid
+          const sessionExpiry = authState.sessionExpiry ? new Date(authState.sessionExpiry) : null;
+          const lockoutUntil = authState.lockoutUntil ? new Date(authState.lockoutUntil) : null;
+          
+          // If locked out and lockout hasn't expired, maintain lockout
+          if (lockoutUntil && lockoutUntil > new Date()) {
+            dispatch({ 
+              type: 'SET_LOCKOUT', 
+              payload: lockoutUntil 
+            });
+            return;
+          }
+          
+          // If session expired, clear everything
+          if (sessionExpiry && sessionExpiry < new Date()) {
+            localStorage.removeItem('cafepos_user');
+            localStorage.removeItem('cafepos_auth_state');
+            dispatch({ type: 'SESSION_EXPIRED' });
+            return;
+          }
+          
+          // Verify user is still valid and active via API (only if we have a token)
+          if (authState.token) {
+            try {
+              const response = await networkAdapter.getCurrentUser();
+              if (response && response.success && response.data) {
+                const currentUser = response.data.user; // Extract user from response.data.user
+                currentUser.permissions = getUserPermissions(currentUser.role);
+                dispatch({ type: 'LOGIN_SUCCESS', payload: currentUser });
+              } else {
+                localStorage.removeItem('cafepos_user');
+                localStorage.removeItem('cafepos_auth_state');
+              }
+            } catch (error) {
+              console.warn('Failed to verify current user:', error);
+              localStorage.removeItem('cafepos_user');
+              localStorage.removeItem('cafepos_auth_state');
+            }
+          } else {
+            // No token available, clear session
+            localStorage.removeItem('cafepos_user');
+            localStorage.removeItem('cafepos_auth_state');
+          }
+        } catch (error) {
           localStorage.removeItem('cafepos_user');
           localStorage.removeItem('cafepos_auth_state');
-          dispatch({ type: 'SESSION_EXPIRED' });
-          return;
         }
-        
-        // Verify user is still valid and active
-        const currentUser = MOCK_USERS.find(u => u.id === user.id && u.isActive);
-        if (currentUser) {
-          dispatch({ type: 'LOGIN_SUCCESS', payload: currentUser });
-        } else {
-          localStorage.removeItem('cafepos_user');
-          localStorage.removeItem('cafepos_auth_state');
-        }
-      } catch (error) {
-        localStorage.removeItem('cafepos_user');
-        localStorage.removeItem('cafepos_auth_state');
       }
-    }
+    };
+
+    validateSession();
   }, []);
 
   // Session timeout checker
@@ -258,12 +221,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     if (state.isAuthenticated && state.user) {
       localStorage.setItem('cafepos_user', JSON.stringify(state.user));
-      localStorage.setItem('cafepos_auth_state', JSON.stringify({
+      
+      // Get existing auth state to preserve token
+      const existingAuthState = localStorage.getItem('cafepos_auth_state');
+      let authState = {
         failedAttempts: state.failedAttempts,
         lockoutUntil: state.lockoutUntil,
         lastActivity: state.lastActivity,
         sessionExpiry: state.sessionExpiry
-      }));
+      };
+      
+      // Preserve token if it exists
+      if (existingAuthState) {
+        try {
+          const parsed = JSON.parse(existingAuthState);
+          if (parsed.token) {
+            authState.token = parsed.token;
+          }
+        } catch (error) {
+          console.warn('Failed to parse existing auth state:', error);
+        }
+      }
+      
+      localStorage.setItem('cafepos_auth_state', JSON.stringify(authState));
     }
   }, [state]);
 
@@ -282,56 +262,68 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     dispatch({ type: 'LOGIN_START' });
 
     try {
-      let user: User | undefined;
+      // API authentication only - no fallback
+      const response = await networkAdapter.authenticate(credentials);
+      console.log('Auth response:', response);
       
-      // Try API authentication first
-      try {
-        const response = await networkAdapter.authenticate(credentials);
-        if (response && response.user && !response.errors?.length) {
-          user = response.user;
-          // Update permissions based on role
-          user.permissions = getUserPermissions(user.role);
-        }
-      } catch (apiError) {
-        console.warn('API authentication failed, falling back to mock authentication:', apiError);
-      }
+      // Check if authentication was successful (backend returns data with user info for success)
+      if (response && response.data && response.data.user && response.data.token) {
+        const user = response.data.user; // Extract user from response.data.user
+        const token = response.data.token; // Extract token from response.data.token
+        const sessionExpiry = response.data.sessionExpiry; // Extract session expiry
 
-      // Fallback to mock authentication if API fails
-      if (!user) {
-        // Simulate API call delay
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        // PIN-based login
-        if (credentials.pinCode) {
-          user = MOCK_USERS.find(u => 
-            u.pinCode === credentials.pinCode && u.isActive
-          );
+        if (!user) {
+          throw new Error('User data is missing from response');
         }
         
-        // Username/password login
-        if (!user && credentials.username) {
-          user = MOCK_USERS.find(u => 
-            u.username === credentials.username && u.isActive
-          );
-          
-          // In a real app, you'd verify the password here
-          // For demo purposes, we'll accept any password for existing usernames
+        if (!user.role) {
+          throw new Error('User role is missing from response');
         }
+
+        // Update permissions based on role
+        user.permissions = getUserPermissions(user.role);
+        user.lastLogin = new Date();
+
+        // Save user to localStorage
+        localStorage.setItem('cafepos_user', JSON.stringify(user));
+
+        // Save auth state with token to localStorage
+        const authState = {
+          token: token,
+          sessionExpiry: sessionExpiry,
+          lastActivity: new Date(),
+          failedAttempts: 0,
+          lockoutUntil: null
+        };
+        localStorage.setItem('cafepos_auth_state', JSON.stringify(authState));
+
+        dispatch({ type: 'LOGIN_SUCCESS', payload: user });
+      } else {
+        // Handle authentication failure with proper error message
+        let errorMessage = 'Invalid credentials. Please check your PIN or username/password.';
+        
+        if (response?.errors?.length > 0) {
+          errorMessage = response.errors[0];
+        } else if (response?.message) {
+          errorMessage = response.message;
+        }
+        
+        throw new Error(errorMessage);
       }
-
-      if (!user) {
-        throw new Error('Invalid credentials or user not found');
-      }
-
-      // Update last login
-      user.lastLogin = new Date();
-
-      // Save to localStorage
-      localStorage.setItem('cafepos_user', JSON.stringify(user));
-
-      dispatch({ type: 'LOGIN_SUCCESS', payload: user });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Login failed';
+      let message = 'Login failed. Please try again.';
+      
+      if (error instanceof Error) {
+        // Use the specific error message
+        message = error.message;
+      }
+      
+      // Handle network errors specifically
+      if (error && typeof error === 'object' && 'name' in error && error.name === 'TypeError' && 
+          'message' in error && typeof error.message === 'string' && error.message.includes('fetch')) {
+        message = 'Unable to connect to server. Please check your connection.';
+      }
+      
       dispatch({ type: 'LOGIN_FAILURE', payload: message });
       throw error;
     }
@@ -421,5 +413,3 @@ export const useAuth = (): AuthContextType => {
   return context;
 };
 
-// Export mock users for development/testing
-export { MOCK_USERS };
